@@ -21,11 +21,14 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/public/health").permitAll()
-                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/info", "/actuator/metrics", "/actuator/env",
+                                "/actuator/prometheus")
+                        .permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**")
                         .permitAll()
                         .anyRequest().authenticated())
-                .httpBasic(httpBasic -> {});
+                .httpBasic(httpBasic -> {
+                });
         return http.build();
     }
 

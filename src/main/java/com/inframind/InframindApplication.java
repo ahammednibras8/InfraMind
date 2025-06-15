@@ -1,6 +1,7 @@
 package com.inframind;
 
 import java.lang.reflect.Method;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -15,22 +16,49 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+
 @SpringBootApplication
 @RestController
+@EnableMethodSecurity
 public class InframindApplication {
 
+	// Autowire RequestMappingHandlerMapping to access all registered endpoints
 	@Autowired
 	@Qualifier("requestMappingHandlerMapping")
 	private RequestMappingHandlerMapping handlerMapping;
 
+	// Autowire MeterRegistry for custom metrics
+	@Autowired
+	private MeterRegistry meterRegistry;
+
+	// Store application startup time for custom uptime metric
+	private final Instant appStartupTime = Instant.now();
+
 	public static void main(String[] args) {
 		SpringApplication.run(InframindApplication.class, args);
+	}
+
+	// Custom Metric Initialization
+	@jakarta.annotation.PostConstruct
+	public void registerCustomMetrics() {
+		// Register a custom gauge for application uptime in seconds
+		Gauge.builder("inframind.custom.uptime.seconds", this, app -> {
+			return (double) (Instant.now().getEpochSecond() - appStartupTime.getEpochSecond());
+		})
+		.description("Application uptime in seconds")
+		.tag("component", "core")
+		.register(meterRegistry);
+
+		System.out.println("Custom uptime metrics 'inframind.custom.uptime.seconds' registered");
 	}
 
 	// Single Live Endpoint: Version Info
@@ -167,7 +195,7 @@ public class InframindApplication {
 
 		while (matcher.find()) {
 			if (matcher.group(1) != null) {
-				roles.add(matcher.group(1).replace("ROLE+", ""));
+				roles.add(matcher.group(1).replace("ROLE_", ""));
 			} else if (matcher.group(2) != null) {
 				roles.add(matcher.group(2));
 			} else if (matcher.group(3) != null) {
