@@ -23,6 +23,16 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      - name: Install Maven
+        run: sudo apt-get update && sudo apt-get install -y maven
+
+      # Install Docker Compose using the standalone binary download for maximum compatibility.
+      - name: Install Docker Compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+
+
       - name: Build Spring Boot application with Maven
         run: mvn clean install -DskipTests
 
@@ -35,31 +45,42 @@ jobs:
           echo "This step would typically deploy to a dev/staging server."
           echo "For local proof, you would run 'docker-compose up -d' here or similar."
           echo "--- Deployment simulation complete ---"
-          # TODO:In a real scenario, if deploying to a cloud service, you'd add steps here
 
       - name: Verify Application Startup (Local)
         run: |
-          echo "Starting Docker container for verification..."
-          # Start the Docker container in detached mode, mapping 8081 to 8081
-          # The application within the container listens on 8081, so the host port should also be 8081
-          docker run -d --name inframind-verify -p 8081:8081 inframind-app
-          echo "Waiting for application to start (max 60 seconds)..."
-          # Wait for the application to be reachable on port 8081
+          echo "Starting Docker Compose services for verification..."
+          # Use docker-compose to bring up the service defined in docker-compose.yml
+          # This manages the container lifecycle and port binding more robustly.
+          docker-compose up -d inframind-app # Only bring up the specific service
+
+          # Add an initial sleep to give the application more time to fully start
+          echo "Giving application an initial 15 seconds to boot before health checks begin..."
+          sleep 15 # Spring Boot applications can take time to start up
+
+          echo "Waiting for application to become healthy (max 60 seconds of polling)..."
+          HEALTH_CHECK_URL="http://localhost:8081/api/public/health"
+          APP_READY=false
           for i in $(seq 1 60); do
-            # Corrected the port from 8080 to 8081 in the curl command
-            response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/api/public/health)
+            # Use curl with increased robustness (silent, fail-silently, write-out HTTP code)
+            response=$(curl -s -o /dev/null -w "%{http_code}" $HEALTH_CHECK_URL)
             if [ "$response" -eq 200 ]; then
-              echo "Application is up and running!"
+              echo "Application is up and running! Health check passed (HTTP 200)."
+              APP_READY=true
               break
             fi
+            echo "Attempt $i: Application not yet ready (HTTP status: $response). Retrying in 1 second..."
             sleep 1
           done
-          # Check if the application is still not up after waiting
-          if [ "$response" -ne 200 ]; then
-            echo "Application did not start successfully within the expected time."
-            docker logs inframind-verify # Output container logs for debugging
-            exit 1
+
+          # Final check and cleanup
+          if [ "$APP_READY" = false ]; then
+            echo "ERROR: Application did not start successfully within the expected time."
+            echo "--- DIAGNOSTIC: Docker Compose Logs for inframind-app ---"
+            docker-compose logs inframind-app # Output container logs for debugging
+            echo "--- END DIAGNOSTIC ---"
+            exit 1 # Fail the step if application is not ready
           fi
+
           echo "Application verification successful."
-          docker stop inframind-verify
-          docker rm inframind-verify
+          # Clean up all services defined in docker-compose.yml
+          docker-compose down
