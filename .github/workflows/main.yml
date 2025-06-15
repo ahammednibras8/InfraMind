@@ -1,0 +1,63 @@
+name: InfraMind CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build Spring Boot application with Maven
+        run: mvn clean install -DskipTests
+
+      - name: Build Docker image
+        run: docker build -t inframind-app .
+
+      - name: Simulate Local Deployment
+        run: |
+          echo "--- Simulating local deployment of InfraMind-app ---"
+          echo "This step would typically deploy to a dev/staging server."
+          echo "For local proof, you would run 'docker-compose up -d' here or similar."
+          echo "--- Deployment simulation complete ---"
+          # TODO:In a real scenario, if deploying to a cloud service, you'd add steps here
+
+      - name: Verify Application Startup (Local)
+        run: |
+          echo "Starting Docker container for verification..."
+          # Start the Docker container in detached mode
+          docker run -d --name inframind-verify -p 8080:8080 inframind-app
+          echo "Waiting for application to start (max 60 seconds)..."
+          # Wait for the application to be reachable
+          for i in $(seq 1 60); do
+            response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/public/health)
+            if [ "$response" -eq 200 ]; then
+              echo "Application is up and running!"
+              break
+            fi
+            sleep 1
+          done
+          # Check if the application is still not up after waiting
+          if [ "$response" -ne 200 ]; then
+            echo "Application did not start successfully within the expected time."
+            docker logs inframind-verify # Output container logs for debugging
+            exit 1
+          fi
+          echo "Application verification successful."
+          docker stop inframind-verify
+          docker rm inframind-verify

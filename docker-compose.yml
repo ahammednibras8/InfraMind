@@ -1,0 +1,8 @@
+services:
+  inframind-app:
+    build: .
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_SECURITY_USER_NAME: admin
+      SPRING_SECURITY_USER_PASSWORD: password
