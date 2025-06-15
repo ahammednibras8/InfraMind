@@ -40,11 +40,13 @@ jobs:
       - name: Verify Application Startup (Local)
         run: |
           echo "Starting Docker container for verification..."
-          # Start the Docker container in detached mode
+          # Start the Docker container in detached mode, mapping 8081 to 8081
+          # The application within the container listens on 8081, so the host port should also be 8081
           docker run -d --name inframind-verify -p 8081:8081 inframind-app
           echo "Waiting for application to start (max 60 seconds)..."
-          # Wait for the application to be reachable
+          # Wait for the application to be reachable on port 8081
           for i in $(seq 1 60); do
+            # Corrected the port from 8080 to 8081 in the curl command
             response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/api/public/health)
             if [ "$response" -eq 200 ]; then
               echo "Application is up and running!"
