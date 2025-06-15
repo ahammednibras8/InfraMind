@@ -41,11 +41,11 @@ jobs:
         run: |
           echo "Starting Docker container for verification..."
           # Start the Docker container in detached mode
-          docker run -d --name inframind-verify -p 8080:8080 inframind-app
+          docker run -d --name inframind-verify -p 8081:8081 inframind-app
           echo "Waiting for application to start (max 60 seconds)..."
           # Wait for the application to be reachable
           for i in $(seq 1 60); do
-            response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/public/health)
+            response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/api/public/health)
             if [ "$response" -eq 200 ]; then
               echo "Application is up and running!"
               break
