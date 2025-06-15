@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +16,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
@@ -43,6 +46,18 @@ public class InframindApplication {
 		return "InfraMind Public Health: OK";
 	}
 
+	@GetMapping("/api/admin/report")
+	@PreAuthorize("hasRole('ADMIN')")
+	public String getAdminReport() {
+		return "Admin Report: Critical System Metrics (ADMIN ONLY)";
+	}
+
+	@PostMapping("/api/user/data")
+	@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+	public String postUserData() {
+		return "User Data Posted Successfully (USER or ADMIN)";
+	}
+
 	// Return a JSON list of all available endpoints and their metadata
 	@GetMapping("/infra/api-map")
 	@PreAuthorize("hasRole('ADMIN')")
@@ -67,18 +82,23 @@ public class InframindApplication {
 			String controllerClass = handlerMethod.getBeanType().getName();
 
 			// Determine Roles Allowed
-			String rolesAllowed = "PUBLIC";
+			List<String> rolesAllowed = new ArrayList<>();
 			Method method = handlerMethod.getMethod();
 			PreAuthorize preAuthorizeAnnotation = AnnotationUtils.findAnnotation(method, PreAuthorize.class);
+			PreAuthorize classPreAuthorizeAnnotation = AnnotationUtils.findAnnotation(handlerMethod.getBeanType(),
+					PreAuthorize.class);
 
 			if (preAuthorizeAnnotation != null) {
-				rolesAllowed = preAuthorizeAnnotation.value();
+				rolesAllowed.addAll(extractRolesFromExpression(preAuthorizeAnnotation.value()));
+			} else if (classPreAuthorizeAnnotation != null) {
+				rolesAllowed.addAll(extractRolesFromExpression(classPreAuthorizeAnnotation.value()));
 			} else {
-				PreAuthorize classPreAuthorizeAnnotation = AnnotationUtils.findAnnotation(handlerMethod.getBeanType(),
-						PreAuthorize.class);
-				if (classPreAuthorizeAnnotation != null) {
-					rolesAllowed = classPreAuthorizeAnnotation.value();
-				}
+				// If no @PreAuthorize, consider it public or unsecured by default for API map
+				// purposes
+				rolesAllowed.add("UNSECURED_OR_DEFAULT_SECURED");
+			}
+			if (rolesAllowed.isEmpty()) {
+				rolesAllowed.add("UNSECURED_OR_DEFAULT_SECURED");
 			}
 
 			EndpointMetadata metadata = new EndpointMetadata(
@@ -87,23 +107,102 @@ public class InframindApplication {
 					controllerClass + "::" + controllerMethod,
 					rolesAllowed);
 			apiMap.add(metadata);
+
 		}
 
 		return apiMap;
+	}
+
+	// Objective: Show who has access to what, where, and why.
+	@GetMapping("/infra/access-map")
+	@PreAuthorize("hasRole('ADMIN')")
+	public List<AccessMapEntry> getAccessMap() {
+		List<AccessMapEntry> accessMap = new ArrayList<>();
+
+		for (Map.Entry<RequestMappingInfo, org.springframework.web.method.HandlerMethod> entry : handlerMapping
+				.getHandlerMethods().entrySet()) {
+			RequestMappingInfo mappingInfo = entry.getKey();
+			org.springframework.web.method.HandlerMethod handlerMethod = entry.getValue();
+
+			Set<String> patterns = mappingInfo.getPatternValues();
+			Set<String> methods = mappingInfo.getMethodsCondition().getMethods().stream().map(Enum::name)
+					.collect(Collectors.toSet());
+
+			// Extract roles required for this endpoint
+			List<String> roles = new ArrayList<>();
+			Method method = handlerMethod.getMethod();
+			PreAuthorize preAuthorizeAnnotation = AnnotationUtils.findAnnotation(method, PreAuthorize.class);
+			PreAuthorize classPreAuthorizeAnnotation = AnnotationUtils.findAnnotation(handlerMethod.getBeanType(),
+					PreAuthorize.class);
+
+			if (preAuthorizeAnnotation != null) {
+				roles.addAll(extractRolesFromExpression(preAuthorizeAnnotation.value()));
+			} else if (classPreAuthorizeAnnotation != null) {
+				roles.addAll(extractRolesFromExpression(classPreAuthorizeAnnotation.value()));
+			} else {
+				// For the access map, if no specific @PreAuthorize, we might default to no
+				// roles specified
+				roles.add("NONE_EXPLICITLY_REQUIRED");
+			}
+			if (roles.isEmpty()) {
+				roles.add("NONE_EXPLICITLY_REQUIRED");
+			}
+
+			// For each pattern and method combination, create an entry
+			for (String pattern : patterns) {
+				for (String httpMethod : methods) {
+					accessMap.add(new AccessMapEntry(pattern, httpMethod, roles));
+				}
+			}
+		}
+		return accessMap;
+	}
+
+	// Helper Method to Extract Roles from @PreAuthorize Expression
+	private List<String> extractRolesFromExpression(String expression) {
+		List<String> roles = new ArrayList<>();
+
+		Pattern pattern = Pattern.compile("'(ROLE_\\w+)'|'(\\w+)'|\\b(ROLE_\\w+)\\b|\\b(\\w+)\\b");
+		Matcher matcher = pattern.matcher(expression);
+
+		while (matcher.find()) {
+			if (matcher.group(1) != null) {
+				roles.add(matcher.group(1).replace("ROLE+", ""));
+			} else if (matcher.group(2) != null) {
+				roles.add(matcher.group(2));
+			} else if (matcher.group(3) != null) {
+				roles.add(matcher.group(3).replace("ROLE_", ""));
+			} else if (matcher.group(4) != null) {
+				roles.add(matcher.group(4));
+			}
+		}
+		return roles.stream().distinct().collect(Collectors.toList());
 	}
 
 	public static class EndpointMetadata {
 		public List<String> urls;
 		public List<String> httpMethods;
 		public String controllerMethods;
-		public String rolesAllowed;
+		public List<String> rolesAllowed;
 
 		public EndpointMetadata(List<String> urls, List<String> httpMethods, String controllerMethod,
-				String rolesAllowed) {
+				List<String> rolesAllowed) {
 			this.urls = urls;
 			this.httpMethods = httpMethods;
 			this.controllerMethods = controllerMethod;
 			this.rolesAllowed = rolesAllowed;
+		}
+	}
+
+	public static class AccessMapEntry {
+		public String endpoint;
+		public String method;
+		public List<String> roles;
+
+		public AccessMapEntry(String endpoint, String method, List<String> roles) {
+			this.endpoint = endpoint;
+			this.method = method;
+			this.roles = roles;
 		}
 	}
 }
