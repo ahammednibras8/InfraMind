@@ -138,8 +138,3 @@ jobs:
           echo "--- Verification complete. Cleaning up Docker Compose services ---"
           # Make docker-compose down robust by ensuring it doesn't fail the step if containers are already gone.
           docker-compose down || true
-
-      # - name: Check if app is up from runner
-      #   run: |
-      #     echo "Checking if app is up at http://localhost:8081/actuator/health"
-      #     curl -v http://localhost:8081/actuator/health || (docker ps -a && docker-compose logs inframind-app && exit 1)
