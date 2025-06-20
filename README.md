@@ -1,6 +1,6 @@
 # InfraMind - The Self-Healing Backend Brain
 
-[![Build Status](https://github.com/ahammednibras8/InfraMind/workflows/CI/badge.svg)](https://github.com/your-org/infra-mind/actions)
+[![Build Status](https://github.com/ahammednibras8/InfraMind/workflows/CI/badge.svg)](https://github.com/ahammednibras8/InfraMind/actions)
 [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.x-6DB33F?style=flat&logo=spring-boot)](https://spring.io/projects/spring-boot)
 
