@@ -4,185 +4,426 @@
 [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.x-6DB33F?style=flat&logo=spring-boot)](https://spring.io/projects/spring-boot)
 
-> **A precision-engineered backend framework designed to eliminate complexity and maximize productivity.**
+> **InfraMind isn't just a tool. It's a mirror for broken backends.**
 
-InfraMind is not just another backend framework—it's a comprehensive solution for building robust, observable, and secure backend systems with minimal configuration overhead.
+A precision-engineered backend operating system that auto-documents, auto-heals, and auto-exposes what the hell is really happening in your backend. Transform opaque operations into crystal-clear intelligence.
+
+## What is InfraMind?
+
+InfraMind is a Spring Boot-powered backend framework that eliminates the guesswork from backend operations. It provides surgical control over your system by automatically mapping your API endpoints, visualizing access controls, and exposing real-time system health—all without manual configuration.
+
+## Why InfraMind Exists
+
+Most engineering teams are drowning in **invisible complexity**:
+
+- **Fragile Microservices**: Your backend is a house of cards where minor changes trigger cascading failures
+- **Sloppy Security**: Who has access to what? It's a mystery until a breach exposes your blind spots
+- **Non-existent Observability**: You're flying blind, reacting to outages instead of predicting them
+- **Hidden System State**: The true state of your backend is invisible, forcing endless debugging cycles
+
+InfraMind weaponizes your backend, giving you the commander's view to preempt problems before they cripple your operations.
+
+## What InfraMind Does (Plain English)
+
+**Live API Intelligence**: Forget outdated documentation. InfraMind auto-generates a living map of every endpoint, its usage patterns, and current status—always synced with your code.
+
+**Smart Security Visualization**: See exactly who can access what within your system. No more security vulnerabilities lurking in undocumented access rules.
+
+**Real-time System Pulse**: Get instant visibility into your backend's vital signs—latency, errors, memory, CPU—the metrics you need to make decisions.
+
+**Automated Deployment Pipeline**: Deploy with confidence using integrated CI/CD that ensures your backend is always stable and battle-ready.
+
+**Foundation for Prediction**: Continuously collect critical data to identify failure patterns and enable automated root cause analysis.
+
+## Who InfraMind is For
+
+**Solo Founders**: Tired of duct-taping their backend together and losing sleep over invisible issues.
+
+**Series A Startups**: Struggling with bloated systems, scaling pains, and lack of visibility into growing infrastructure.
+
+**Backend Engineers & SREs**: Who need immediate results and a backend that talks back to them—not one that requires deciphering tribal knowledge.
+
+## 📸 Intelligence Briefing
+
+### InfraMind Dashboard: Your Commander's View
+![Dashboard](images/dashboard.jpg)
+
+### Live API Map: Know Every Endpoint
+```
+[
+  {
+    "urls": [
+      "/api/v1/status"
+    ],
+    "httpMethods": [
+      "GET"
+    ],
+    "rolesAllowed": [
+      "hasRole",
+      "ADMIN"
+    ],
+    "controllerMethods": "com.inframind.InframindApplication::getStatus"
+  },
+  {
+    "urls": [
+      "/swagger-ui.html"
+    ],
+    "httpMethods": [
+      "GET"
+    ],
+    "rolesAllowed": [
+      "UNSECURED_OR_DEFAULT_SECURED"
+    ],
+    "controllerMethods": "org.springdoc.webmvc.ui.SwaggerWelcomeWebMvc::redirectToUi"
+  },
+  {
+    "urls": [
+      "/api-docs"
+    ],
+    "httpMethods": [
+      "GET"
+    ],
+    "rolesAllowed": [
+      "UNSECURED_OR_DEFAULT_SECURED"
+    ],
+    "controllerMethods": "org.springdoc.webmvc.api.OpenApiWebMvcResource::openapiJson"
+  },
+  {
+    "urls": [
+      "/api-docs/swagger-config"
+    ],
+    "httpMethods": [
+      "GET"
+    ],
+    "rolesAllowed": [
+      "UNSECURED_OR_DEFAULT_SECURED"
+    ],
+    "controllerMethods": "org.springdoc.webmvc.ui.SwaggerConfigResource::openapiJson"
+  },
+  {
+    "urls": [
+      "/infra/api-map"
+    ],
+    "httpMethods": [
+      "GET"
+    ],
+    "rolesAllowed": [
+      "hasRole",
+      "ADMIN"
+    ],
+    "controllerMethods": "com.inframind.InframindApplication::getApiMap"
+  },
+  {
+    "urls": [
+      "/api/admin/report"
+    ],
+    "httpMethods": [
+      "GET"
+    ],
+    "rolesAllowed": [
+      "hasRole",
+      "ADMIN"
+    ],
+    "controllerMethods": "com.inframind.InframindApplication::getAdminReport"
+  },
+  {
+    "urls": [
+      "/error"
+    ],
+    "httpMethods": [
+      "ANY"
+    ],
+    "rolesAllowed": [
+      "UNSECURED_OR_DEFAULT_SECURED"
+    ],
+    "controllerMethods": "org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController::error"
+  },
+  {
+    "urls": [
+      "/api/user/data"
+    ],
+    "httpMethods": [
+      "POST"
+    ],
+    "rolesAllowed": [
+      "hasAnyRole",
+      "USER",
+      "ADMIN"
+    ],
+    "controllerMethods": "com.inframind.InframindApplication::postUserData"
+  },
+  {
+    "urls": [
+      "/api/public/health"
+    ],
+    "httpMethods": [
+      "GET"
+    ],
+    "rolesAllowed": [
+      "UNSECURED_OR_DEFAULT_SECURED"
+    ],
+    "controllerMethods": "com.inframind.InframindApplication::publicHealthCheck"
+  },
+  {
+    "urls": [
+      "/infra/access-map"
+    ],
+    "httpMethods": [
+      "GET"
+    ],
+    "rolesAllowed": [
+      "hasRole",
+      "ADMIN"
+    ],
+    "controllerMethods": "com.inframind.InframindApplication::getAccessMap"
+  },
+  {
+    "urls": [
+      "/api-docs.yaml"
+    ],
+    "httpMethods": [
+      "GET"
+    ],
+    "rolesAllowed": [
+      "UNSECURED_OR_DEFAULT_SECURED"
+    ],
+    "controllerMethods": "org.springdoc.webmvc.api.OpenApiWebMvcResource::openapiYaml"
+  },
+  {
+    "urls": [
+      "/error"
+    ],
+    "httpMethods": [
+      "ANY"
+    ],
+    "rolesAllowed": [
+      "UNSECURED_OR_DEFAULT_SECURED"
+    ],
+    "controllerMethods": "org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController::errorHtml"
+  }
+]
+```
+
+### RBAC Visualizer: Unmasking Access Logic
+```
+[
+  {
+    "endpoint": "/api/v1/status",
+    "method": "GET",
+    "roles": [
+      "hasRole",
+      "ADMIN"
+    ]
+  },
+  {
+    "endpoint": "/swagger-ui.html",
+    "method": "GET",
+    "roles": [
+      "NONE_EXPLICITLY_REQUIRED"
+    ]
+  },
+  {
+    "endpoint": "/api-docs",
+    "method": "GET",
+    "roles": [
+      "NONE_EXPLICITLY_REQUIRED"
+    ]
+  },
+  {
+    "endpoint": "/api-docs/swagger-config",
+    "method": "GET",
+    "roles": [
+      "NONE_EXPLICITLY_REQUIRED"
+    ]
+  },
+  {
+    "endpoint": "/infra/api-map",
+    "method": "GET",
+    "roles": [
+      "hasRole",
+      "ADMIN"
+    ]
+  },
+  {
+    "endpoint": "/api/admin/report",
+    "method": "GET",
+    "roles": [
+      "hasRole",
+      "ADMIN"
+    ]
+  },
+  {
+    "endpoint": "/api/user/data",
+    "method": "POST",
+    "roles": [
+      "hasAnyRole",
+      "USER",
+      "ADMIN"
+    ]
+  },
+  {
+    "endpoint": "/api/public/health",
+    "method": "GET",
+    "roles": [
+      "NONE_EXPLICITLY_REQUIRED"
+    ]
+  },
+  {
+    "endpoint": "/infra/access-map",
+    "method": "GET",
+    "roles": [
+      "hasRole",
+      "ADMIN"
+    ]
+  },
+  {
+    "endpoint": "/api-docs.yaml",
+    "method": "GET",
+    "roles": [
+      "NONE_EXPLICITLY_REQUIRED"
+    ]
+  }
+]
+```
+
+### Auto-Updating Documentation: Always Current
+![Docs](images/api-docs.jpg)
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Docker & Docker Compose V2
-- Java 21+ (for local development)
 - 2GB+ RAM recommended
 
-### Local Deployment
+### Deploy in 2 Minutes
 
 ```bash
-# Clone the repository
+# Clone the battlefield
 git clone https://github.com/ahammednibras8/InfraMind.git
 cd InfraMind
 
-# Download OpenTelemetry Java Agent (if not present)
+# Download OpenTelemetry Java Agent
 curl -L -o javaagent/opentelemetry-javaagent.jar \
   https://github.com/open-telemetry/opentelemetry-javaagent/releases/latest/download/opentelemetry-javaagent.jar
 
 # Deploy the full stack
 docker-compose up --build -d
 
-# Wait for services to start (20-30 seconds)
+# Wait 30 seconds for services to start
 
-# Verify deployment
+# Verify InfraMind is operational
 curl http://localhost:8081/api/public/health
 ```
 
-### Access Points
-- **Application**: http://localhost:8081
-- **API Documentation**: http://localhost:8081/swagger-ui.html
-- **Jaeger Tracing**: http://localhost:16686
-- **Prometheus Metrics**: http://localhost:9090
+### Access Your Command Center
+- **InfraMind Application**: http://localhost:8081
+- **Live API Documentation**: http://localhost:8081/swagger-ui.html
+- **Distributed Tracing**: http://localhost:16686
+- **Metrics Dashboard**: http://localhost:9090
 
-## 🏗️ Architecture
+## 📡 Command Interface (API Endpoints)
 
-InfraMind is built on a modern, battle-tested stack:
+### Core Operations
+```
+GET  /api/public/health     # Public health check
+GET  /api/v1/status         # System status (Admin only)
+GET  /api/admin/report      # Critical admin report (Admin only)
+POST /api/user/data         # User data operations
+```
+
+### InfraMind Intelligence Layer (Admin Only)
+```
+GET /infra/api-map          # Live API endpoint mapping
+GET /infra/access-map       # RBAC visualization
+```
+
+### Observability & Management
+```
+GET /actuator/health        # Detailed health information
+GET /actuator/info          # Application build information
+GET /actuator/metrics       # Available system metrics
+GET /actuator/prometheus    # Prometheus-formatted metrics
+```
+
+## 🏗️ Battle-Tested Architecture
 
 ```
 InfraMind Stack
-├── Spring Boot 3.x          # Core framework
-├── Spring Security          # Authentication & authorization  
-├── Spring Actuator          # Health checks & metrics
-├── Docker + Compose         # Containerization
-├── GitHub Actions           # CI/CD pipeline
-├── Springdoc OpenAPI        # API documentation
-├── Micrometer + Prometheus  # Metrics collection
+├── Spring Boot 3.x          # Core framework foundation
+├── Spring Security          # Fortress-grade authentication
+├── Spring Actuator          # Operational intelligence
+├── Docker + Compose         # Portable deployment
+├── GitHub Actions           # Automated CI/CD pipeline
+├── Springdoc OpenAPI        # Live API documentation
+├── Micrometer + Prometheus  # Metrics collection & exposure
 ├── OpenTelemetry            # Distributed tracing
-├── OpenTelemetry Collector  # Data processing
-└── Jaeger                   # Trace visualization
+├── OpenTelemetry Collector  # Observability data processing
+└── Jaeger                   # Visual trace analysis
 ```
 
-## 📡 API Endpoints
+## 🚦 Automated Supply Lines (CI/CD)
 
-### Core Operations
-- `GET /api/public/health` - Public health check
-- `GET /api/v1/status` - System status (Admin only)
-- `GET /api/admin/report` - Admin report (Admin only)
-- `POST /api/user/data` - User data endpoint
+The GitHub Actions pipeline ensures rapid, reliable delivery:
 
-### InfraMind Intelligence (Admin Only)
-- `GET /infra/api-map` - Live API endpoint mapping
-- `GET /infra/access-map` - RBAC visualization
+1. **Automated Builds**: Build Spring Boot JAR on every push
+2. **Docker Image Creation**: Generate latest application images
+3. **Full Stack Testing**: Deploy entire stack for integration testing
+4. **Health Verification**: Confirm application operational status
+5. **API Map & Info Endpoint Checks**: Ensure `/infra/api-map` (admin) and `/actuator/info` (public) return 200 OK
+6. **Metrics Validation**: Ensure observability data flows correctly
+7. **Traffic Simulation**: Generate realistic load for end-to-end validation
+8. **Automatic Cleanup**: Clean teardown after successful validation
 
-### Observability & Management
-- `GET /actuator/health` - Detailed health information
-- `GET /actuator/info` - Application information
-- `GET /actuator/metrics` - Available metrics
-- `GET /actuator/prometheus` - Prometheus-formatted metrics
+**Pipeline Performance**: < 5 minutes build-to-deploy
 
-## 🛠️ Development
+## 🔒 Security: Building the Fortress
 
-### Local Development
-```bash
-# Run application directly
-./mvnw spring-boot:run
+**Multi-layer Defense**:
+- Role-based access control (RBAC) with ADMIN and USER roles
+- Endpoint-level authorization using Spring Security
+- Secure actuator endpoints with controlled access
+- Comprehensive audit trails through distributed tracing
 
-# Run tests
-./mvnw test
+**Default Development Credentials**:
+- Admin: `admin:password`
+- User: `user:userpass`
 
-# Package application
-./mvnw clean package
+## 🛡️ CORS & Security Configuration
 
-# Build Docker image
-docker build -t inframind-app .
-```
+- **CORS is handled exclusively via Spring Security configuration** in `SecurityConfig.java` using `setAllowedOriginPatterns(["*"])` and `setAllowCredentials(true)`.
+- **Do NOT** use additional `WebMvcConfigurer` CORS beans/classes, as this can cause conflicts and 500 errors.
+- The CI pipeline will catch CORS or backend errors on `/infra/api-map` and `/actuator/info` endpoints.
 
-### Environment Configuration
-The application supports multiple profiles and can be configured via environment variables or `application.yml`.
+## 🧰 Troubleshooting
 
-## 🔒 Security
-
-InfraMind implements comprehensive security measures:
-
-- **Spring Security** with role-based access control (RBAC)
-- **Two-tier authentication**: ADMIN and USER roles
-- **Endpoint-level authorization** using `@PreAuthorize`
-- **Secure actuator endpoints** with appropriate access controls
-
-Default credentials for development:
-- Admin: `admin/admin123`
-- User: `user/user123`
-
-## 📊 Monitoring & Observability
-
-### Metrics
-- **JVM metrics**: Memory, threads, garbage collection
-- **Custom metrics**: Application-specific measurements
-- **Prometheus integration**: `/actuator/prometheus` endpoint
-
-### Tracing
-- **OpenTelemetry**: Automatic request tracing
-- **Jaeger integration**: Visual trace analysis
-- **Distributed tracing**: End-to-end request visibility
-
-### Health Checks
-- **Actuator health**: Comprehensive system health
-- **Custom health indicators**: Application-specific checks
-- **Dependency monitoring**: External service health
-
-## 🚦 CI/CD Pipeline
-
-The GitHub Actions workflow provides:
-
-1. **Automated builds** on every push
-2. **Docker image creation** and validation
-3. **Full stack deployment testing**
-4. **Health check verification**
-5. **Metrics validation**
-6. **Automatic cleanup**
-
-Pipeline execution time: < 5 minutes
+**500 Error on /infra/api-map or CORS errors?**
+- Ensure you have **removed any extra CORS config** (such as a `WebMvcConfigurer` bean/class) and only use the CORS config in `SecurityConfig.java`.
+- The correct config is:
+  ```java
+  configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+  configuration.setAllowCredentials(true);
+  ```
+- If you see an error like:
+  > When allowCredentials is true, allowedOrigins cannot contain the special value "*"
+  You have a conflicting or legacy CORS config. Remove `.allowedOrigins("*")` from your codebase.
+- After fixing, **rebuild and restart** your app and Docker containers.
 
 ## 📋 System Requirements
 
-### Development
+**Development Environment**:
 - Java 21+
 - Maven 3.8+
-- Docker 20.0+
-- Docker Compose V2
+- Docker 20.0+ with Compose V2
 
-### Production
+**Production Baseline**:
 - 2GB+ RAM
 - Ports: 8081, 9090, 16686, 4317, 4318
 
-## 🎯 Performance Targets
-
-- **Deployment time**: < 2 minutes from clone to running
-- **API response time**: < 100ms for core endpoints
-- **Pipeline execution**: < 5 minutes build-to-deploy
-- **Documentation coverage**: 100% endpoint coverage
-
-## 🔄 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/new-capability`
-3. Commit changes: `git commit -m "feat: add new capability"`
-4. Push to branch: `git push origin feature/new-capability`
-5. Create a Pull Request
-
-### Development Guidelines
-- **MVP First**: Focus on core functionality
-- **Pipeline Sacred**: Never break CI/CD
-- **Documentation Mandatory**: Document all endpoints and configurations
-- **Security Non-negotiable**: No shortcuts on authentication
-- **Performance Baseline**: Maintain sub-100ms response times
-
-## 📞 Support & Contact
+## 📞 Command Structure
 
 - **Project Lead**: [@ahammednibras8](https://github.com/ahammednibras8)
 - **Repository**: [InfraMind](https://github.com/ahammednibras8/InfraMind)
 - **Issues**: [GitHub Issues](https://github.com/ahammednibras8/InfraMind/issues)
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🏆 Version
 
@@ -190,4 +431,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
+### Mission Motto
 *"Precision over Perfection, Deployment over Discussion"*
+
+**Next Milestone**: Day 21 - Full MVP Deployment Ready

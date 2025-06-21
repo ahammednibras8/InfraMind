@@ -5,14 +5,53 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>InfraMind: Live Backend Pulse</title>
-    <!-- Tailwind CSS for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'slide-up': 'slide-up 0.8s ease-out forwards',
+                        'fade-in': 'fade-in 1s ease-out forwards',
+                        'bounce-subtle': 'bounce-subtle 2s infinite',
+                        'gradient-shift': 'gradient-shift 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        'pulse-glow': {
+                            '0%, 100%': { opacity: 1, transform: 'scale(1)', boxShadow: '0 0 20px rgba(34, 197, 94, 0.4)' },
+                            '50%': { opacity: 0.8, transform: 'scale(1.05)', boxShadow: '0 0 30px rgba(34, 197, 94, 0.6)' },
+                        },
+                        'float': {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        'slide-up': {
+                            '0%': { opacity: 0, transform: 'translateY(30px)' },
+                            '100%': { opacity: 1, transform: 'translateY(0px)' },
+                        },
+                        'fade-in': {
+                            '0%': { opacity: 0 },
+                            '100%': { opacity: 1 },
+                        },
+                        'bounce-subtle': {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-5px)' },
+                        },
+                        'gradient-shift': {
+                            '0%, 100%': { backgroundPosition: '0% 50%' },
+                            '50%': { backgroundPosition: '100% 50%' },
+                        },
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+                        'mesh-pattern': 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%239C92AC" fill-opacity="0.05"%3E%3Ccircle cx="30" cy="30" r="2"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
                     },
                 }
             }
@@ -21,275 +60,550 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0f4f8;
-            color: #334155;
-            /* Default text color */
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
         }
 
-        .card {
-            background-color: #ffffff;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 75%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 75%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 24px;
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(255, 255, 255, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.25, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .glass-card:hover::before {
+            left: 100%;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 
+                0 35px 70px -12px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
 
         .status-indicator {
-            width: 1.5rem;
-            height: 1.5rem;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
             display: inline-block;
-            margin-right: 0.5rem;
-            vertical-align: middle;
+            margin-right: 12px;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .status-indicator::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border-radius: 50%;
+            border: 2px solid currentColor;
+            opacity: 0;
+            animation: pulse 2s infinite;
         }
 
         .status-up {
-            background-color: #10B981;
-            /* Green */
+            background: linear-gradient(135deg, #10b981, #34d399);
+            color: #10b981;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
         }
 
         .status-down {
-            background-color: #EF4444;
-            /* Red */
+            background: linear-gradient(135deg, #ef4444, #f87171);
+            color: #ef4444;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
         }
 
         .status-unknown {
-            background-color: #FBBF24;
-            /* Amber */
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            color: #f59e0b;
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.2);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(1.4);
+            }
+        }
+
+        .metric-card {
+            position: relative;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
+            background-size: 200% 100%;
+            animation: gradient-shift 3s ease-in-out infinite;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .floating-orb {
+            position: fixed;
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: float 8s ease-in-out infinite;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .orb-1 {
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%);
+            top: 10%;
+            right: 10%;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.2) 0%, transparent 70%);
+            bottom: 20%;
+            left: 5%;
+            animation-delay: 2s;
+        }
+
+        .orb-3 {
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle, rgba(6, 182, 212, 0.4) 0%, transparent 70%);
+            top: 50%;
+            right: 30%;
+            animation-delay: 4s;
+        }
+
+        .title-glow {
+            background: linear-gradient(135deg, #fff, #e2e8f0);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 40px rgba(255, 255, 255, 0.3);
+            animation: fade-in 1.5s ease-out;
+        }
+
+        .data-loading {
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 25%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0.1) 75%);
+            background-size: 200% 100%;
+            animation: loading-shimmer 1.5s infinite;
+            border-radius: 8px;
+            height: 20px;
+            width: 120px;
+        }
+
+        @keyframes loading-shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .value-text {
+            font-weight: 700;
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, #fff, #cbd5e1);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .label-text {
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 500;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .section-title {
+            color: white;
+            font-weight: 700;
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .pulse-ring {
+            animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.8);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(2.4);
+                opacity: 0;
+            }
         }
     </style>
 </head>
 
-<body class="p-6">
-    <div class="max-w-4xl mx-auto">
-        <h1 class="text-4xl font-bold text-gray-900 mb-8 text-center">InfraMind: Live Backend Pulse</h1>
+<body>
+    <!-- Floating Orbs -->
+    <div class="floating-orb orb-1"></div>
+    <div class="floating-orb orb-2"></div>
+    <div class="floating-orb orb-3"></div>
 
-        <!-- Overview Section -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="card">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-4">System Health</h2>
-                <div id="healthStatus" class="text-xl font-medium text-gray-700">
-                    Loading health status...
+    <div class="min-h-screen p-4 md:p-8">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-12 animate-slide-up">
+                <h1 class="text-5xl md:text-7xl font-black title-glow mb-4">
+                    InfraMind
+                </h1>
+                <p class="text-xl md:text-2xl text-white/80 font-light tracking-wide">
+                    Live Backend Intelligence Dashboard
+                </p>
+                <div class="w-32 h-1 bg-gradient-to-r from-blue-400 via-purple-500 to-cyan-400 mx-auto mt-6 rounded-full"></div>
+            </div>
+
+            <!-- Main Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                <!-- System Health - Large Card -->
+                <div class="lg:col-span-2 glass-card p-8 animate-slide-up" style="animation-delay: 0.1s">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="section-title">System Health</h2>
+                        <div class="relative">
+                            <div class="pulse-ring absolute inset-0 border-2 border-green-400 rounded-full opacity-30"></div>
+                            <div class="w-4 h-4 bg-green-400 rounded-full"></div>
+                        </div>
+                    </div>
+                    <div id="healthStatus" class="text-3xl font-bold text-white flex items-center">
+                        <div class="data-loading"></div>
+                    </div>
+                    <p class="text-white/60 mt-2">Real-time system operational status</p>
+                </div>
+
+                <!-- Uptime Card -->
+                <div class="glass-card p-6 animate-slide-up" style="animation-delay: 0.2s">
+                    <h3 class="section-title">Uptime</h3>
+                    <div class="value-text" id="uptimeValue">
+                        <div class="data-loading"></div>
+                    </div>
+                    <p class="label-text mt-1">Seconds Online</p>
+                    <div class="mt-4 text-xs text-white/50">
+                        via OpenTelemetry Collector
+                    </div>
                 </div>
             </div>
 
-            <div class="card">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Application Uptime</h2>
-                <p class="text-gray-700">
-                    <span class="font-semibold">Uptime:</span> <span id="uptimeValue">Loading...</span> seconds
-                </p>
-                <p class="text-gray-700 text-sm mt-2">
-                    <span class="font-semibold">Source:</span> OpenTelemetry Collector (Prometheus Exporter)
-                </p>
+            <!-- Metrics Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Total Endpoints -->
+                <div class="metric-card animate-slide-up" style="animation-delay: 0.3s">
+                    <div class="label-text">Total Endpoints</div>
+                    <div class="value-text mt-2" id="totalEndpoints">
+                        <div class="data-loading"></div>
+                    </div>
+                </div>
+
+                <!-- Secured Endpoints -->
+                <div class="metric-card animate-slide-up" style="animation-delay: 0.4s">
+                    <div class="label-text">Secured Endpoints</div>
+                    <div class="value-text mt-2" id="securedEndpoints">
+                        <div class="data-loading"></div>
+                    </div>
+                </div>
+
+                <!-- Public Endpoints -->
+                <div class="metric-card animate-slide-up" style="animation-delay: 0.5s">
+                    <div class="label-text">Public Endpoints</div>
+                    <div class="value-text mt-2" id="publicEndpoints">
+                        <div class="data-loading"></div>
+                    </div>
+                </div>
+
+                <!-- Build Status -->
+                <div class="metric-card animate-slide-up" style="animation-delay: 0.6s">
+                    <div class="label-text">Build Status</div>
+                    <div class="value-text mt-2 text-green-400">
+                        READY
+                    </div>
+                </div>
+            </div>
+
+            <!-- Build Information -->
+            <div class="glass-card p-8 animate-slide-up" style="animation-delay: 0.7s">
+                <h2 class="section-title">Build & Deployment Information</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <div class="label-text">Commit Hash</div>
+                        <div class="value-text mt-2" id="commitHash">
+                            <div class="data-loading"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="label-text">Build Date</div>
+                        <div class="value-text mt-2" id="buildDate">
+                            <div class="data-loading"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Display -->
+            <div id="apiMapError" class="hidden mt-6 glass-card p-6 border-red-500/50">
+                <div class="text-red-300 font-semibold">Authentication Required</div>
+                <div class="text-red-200/80 text-sm mt-1"></div>
+            </div>
+
+            <!-- Footer -->
+            <div class="text-center mt-12 text-white/50 text-sm animate-fade-in" style="animation-delay: 1s">
+                <p>InfraMind v0.1.0-SNAPSHOT | Real-time Backend Intelligence</p>
+                <p class="mt-1">Refreshes every 30 seconds</p>
             </div>
         </div>
+    </div>
 
-        <!-- Build & Deployment Section -->
-        <div class="card">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Build & Deployment Info</h2>
-            <p class="text-gray-700">
-                <span class="font-semibold">Commit Hash:</span> <span id="commitHash">Loading...</span>
-            </p>
-            <p class="text-gray-700">
-                <span class="font-semibold">Build Date:</span> <span id="buildDate">Loading...</span>
-            </p>
-        </div>
+    <script>
+        // Base URL for the Spring Boot application
+        const BASE_APP_URL = 'http://localhost:8081';
+        // URL for the OpenTelemetry Collector's Prometheus endpoint
+        const OTEL_PROMETHEUS_URL = 'http://localhost:8890/metrics';
+        // Basic Auth header for admin endpoints
+        const ADMIN_AUTH_HEADER = 'Basic ' + btoa('admin:password');
 
+        /**
+         * Fetches and displays the overall system health status.
+         */
+        async function fetchHealthStatus() {
+            const healthStatusElem = document.getElementById('healthStatus');
+            try {
+                const response = await fetch(`${BASE_APP_URL}/actuator/health`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                const status = data.status;
 
-        <!-- Endpoint Summary Section -->
-        <div class="card">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">API Endpoint Summary</h2>
-            <p class="text-gray-700">
-                <span class="font-semibold">Total Endpoints:</span> <span id="totalEndpoints">Loading...</span>
-            </p>
-            <p class="text-gray-700">
-                <span class="font-semibold">Secured Endpoints:</span> <span id="securedEndpoints">Loading...</span>
-            </p>
-            <p class="text-gray-700">
-                <span class="font-semibold">Public Endpoints:</span> <span id="publicEndpoints">Loading...</span>
-            </p>
-            <div id="apiMapError" class="text-red-600 text-sm mt-2 hidden"></div>
-        </div>
+                let statusClass = 'status-unknown';
+                let statusText = 'UNKNOWN';
 
-        <!-- Dynamic Data Fetching Script -->
-        <script>
-            // Base URL for the Spring Boot application
-            const BASE_APP_URL = 'http://localhost:8081';
-            // URL for the OpenTelemetry Collector's Prometheus endpoint (via CORS proxy)
-            const OTEL_PROMETHEUS_URL = 'http://localhost:8890/metrics';
-            // Basic Auth header for admin endpoints
-            const ADMIN_AUTH_HEADER = 'Basic ' + btoa('admin:password');
+                if (status === 'UP') {
+                    statusClass = 'status-up';
+                    statusText = 'OPERATIONAL';
+                } else if (status === 'DOWN') {
+                    statusClass = 'status-down';
+                    statusText = 'CRITICAL FAILURE';
+                } else {
+                    statusText = status.toUpperCase();
+                }
 
-            /**
-             * Fetches and displays the overall system health status.
-             * Targets the Spring Boot Actuator /actuator/health endpoint.
-             */
-            async function fetchHealthStatus() {
-                const healthStatusElem = document.getElementById('healthStatus');
-                try {
-                    // CRITICAL FIX: Target /actuator/health for structured health info
-                    const response = await fetch(`${BASE_APP_URL}/actuator/health`);
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    const data = await response.json(); // Parse response as JSON
+                healthStatusElem.innerHTML = `<span class="status-indicator ${statusClass}"></span>${statusText}`;
+                healthStatusElem.className = 'text-3xl font-bold text-white flex items-center';
+            } catch (error) {
+                console.error('Error fetching health status:', error);
+                healthStatusElem.innerHTML = `<span class="status-indicator status-down"></span>SYSTEM ERROR`;
+                healthStatusElem.className = 'text-3xl font-bold text-red-300 flex items-center';
+            }
+        }
 
-                    const status = data.status; // Get overall status (e.g., UP, DOWN)
+        /**
+         * Fetches and displays application build information.
+         */
+        async function fetchBuildInfo() {
+            const commitHashElem = document.getElementById('commitHash');
+            const buildDateElem = document.getElementById('buildDate');
+            try {
+                const response = await fetch(`${BASE_APP_URL}/actuator/info`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
 
-                    let statusClass = 'status-unknown';
-                    let statusText = 'UNKNOWN';
+                const gitCommit = data.git && data.git.commit && data.git.commit.id ? data.git.commit.id.substring(0, 7) : 'N/A';
+                const buildTime = data.build && data.build.time ? new Date(data.build.time).toLocaleString() : 'N/A';
 
-                    if (status === 'UP') {
-                        statusClass = 'status-up';
-                        statusText = 'OPERATIONAL';
-                    } else if (status === 'DOWN') {
-                        statusClass = 'status-down';
-                        statusText = 'CRITICAL FAILURE';
+                commitHashElem.textContent = gitCommit;
+                buildDateElem.textContent = buildTime;
+            } catch (error) {
+                console.error('Error fetching build info:', error);
+                commitHashElem.textContent = 'ERROR';
+                buildDateElem.textContent = 'ERROR';
+            }
+        }
+
+        /**
+         * Fetches and displays the custom application uptime metric.
+         */
+        async function fetchUptimeMetric() {
+            const uptimeValueElem = document.getElementById('uptimeValue');
+            try {
+                const response = await fetch(OTEL_PROMETHEUS_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const text = await response.text();
+
+                const uptimeRegex = /^inframind_custom_uptime_seconds\{.*\}\s+(\d+(\.\d+)?)$/m;
+                const match = text.match(uptimeRegex);
+
+                if (match && match[1]) {
+                    const seconds = parseFloat(match[1]);
+                    const hours = Math.floor(seconds / 3600);
+                    const minutes = Math.floor((seconds % 3600) / 60);
+                    const remainingSeconds = Math.floor(seconds % 60);
+                    
+                    if (hours > 0) {
+                        uptimeValueElem.textContent = `${hours}h ${minutes}m`;
+                    } else if (minutes > 0) {
+                        uptimeValueElem.textContent = `${minutes}m ${remainingSeconds}s`;
                     } else {
-                        statusText = status.toUpperCase(); // Display other statuses as is
+                        uptimeValueElem.textContent = `${remainingSeconds}s`;
                     }
-
-                    healthStatusElem.innerHTML = `<span class="status-indicator ${statusClass}"></span>${statusText}`;
-                    healthStatusElem.className = `text-xl font-medium text-gray-700`; // Reset class for dynamic text color
-                } catch (error) {
-                    console.error('Error fetching health status:', error);
-                    healthStatusElem.innerHTML = `<span class="status-indicator status-down"></span>ERROR: Could not fetch health`;
-                    healthStatusElem.className = `text-xl font-medium text-red-600`;
+                } else {
+                    uptimeValueElem.textContent = 'N/A';
                 }
+            } catch (error) {
+                console.error('Error fetching uptime metric:', error);
+                uptimeValueElem.textContent = 'ERROR';
             }
+        }
 
-            /**
-             * Fetches and displays application build information (commit hash, build date).
-             * Targets the Spring Boot Actuator /actuator/info endpoint.
-             */
-            async function fetchBuildInfo() {
-                const commitHashElem = document.getElementById('commitHash');
-                const buildDateElem = document.getElementById('buildDate');
-                try {
-                    const response = await fetch(`${BASE_APP_URL}/actuator/info`);
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+        /**
+         * Fetches API map and calculates endpoint statistics.
+         */
+        async function fetchApiMapSummary() {
+            const totalEndpointsElem = document.getElementById('totalEndpoints');
+            const securedEndpointsElem = document.getElementById('securedEndpoints');
+            const publicEndpointsElem = document.getElementById('publicEndpoints');
+            const apiMapErrorElem = document.getElementById('apiMapError');
+
+            try {
+                const response = await fetch(`${BASE_APP_URL}/infra/api-map`, {
+                    headers: {
+                        'Authorization': ADMIN_AUTH_HEADER
                     }
-                    const data = await response.json();
+                });
 
-                    const gitCommit = data.git && data.git.commit && data.git.commit.id ? data.git.commit.id.substring(0, 7) : 'N/A';
-                    const buildTime = data.build && data.build.time ? new Date(data.build.time).toLocaleString() : 'N/A';
-
-                    commitHashElem.textContent = gitCommit;
-                    buildDateElem.textContent = buildTime;
-                } catch (error) {
-                    console.error('Error fetching build info:', error);
-                    commitHashElem.textContent = 'ERROR';
-                    buildDateElem.textContent = 'ERROR';
-                }
-            }
-
-            /**
-             * Fetches and displays the custom application uptime metric from the OpenTelemetry Collector.
-             * Targets http://localhost:8889/metrics and parses the Prometheus format.
-             */
-            async function fetchUptimeMetric() {
-                const uptimeValueElem = document.getElementById('uptimeValue');
-                try {
-                    const response = await fetch(OTEL_PROMETHEUS_URL);
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    const text = await response.text(); // Get raw text, not JSON
-
-                    // Regex to find the 'inframind_custom_uptime_seconds' metric and its value
-                    // This regex is specific to Prometheus text format output.
-                    const uptimeRegex = /^inframind_custom_uptime_seconds\{.*\}\s+(\d+(\.\d+)?)$/m;
-                    const match = text.match(uptimeRegex);
-
-                    if (match && match[1]) {
-                        uptimeValueElem.textContent = parseFloat(match[1]).toFixed(0); // Display as integer seconds
-                    } else {
-                        uptimeValueElem.textContent = 'N/A (Metric not found)';
-                        console.warn("Uptime metric 'inframind_custom_uptime_seconds' not found in Prometheus output.");
-                    }
-                } catch (error) {
-                    console.error('Error fetching uptime metric:', error);
-                    uptimeValueElem.textContent = 'ERROR';
-                }
-            }
-
-            /**
-             * Fetches API map and calculates total, secured, and public endpoint counts.
-             * Targets the custom /infra/api-map endpoint.
-             */
-            async function fetchApiMapSummary() {
-                const totalEndpointsElem = document.getElementById('totalEndpoints');
-                const securedEndpointsElem = document.getElementById('securedEndpoints');
-                const publicEndpointsElem = document.getElementById('publicEndpoints');
-                const apiMapErrorElem = document.getElementById('apiMapError');
-
-                try {
-                    const response = await fetch(`${BASE_APP_URL}/infra/api-map`, {
-                        headers: {
-                            'Authorization': ADMIN_AUTH_HEADER
-                        }
-                    });
-
-                    if (!response.ok) {
-                        apiMapErrorElem.classList.remove('hidden');
-                        if (response.status === 401 || response.status === 403) {
-                            apiMapErrorElem.textContent = `Authentication/Authorization required for API Map. Status: ${response.status}. Ensure 'admin:password' is valid.`;
-                            throw new Error(`Authentication/Authorization required. Status: ${response.status}`);
-                        }
-                        apiMapErrorElem.textContent = `HTTP error! status: ${response.status}`;
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    const data = await response.json();
-                    apiMapErrorElem.classList.add('hidden'); // Hide error if successful
-
-                    let total = data.length;
-                    let secured = 0;
-                    let publicCount = 0;
-
-                    data.forEach(endpoint => {
-                        const isPublicOrUnsecured = endpoint.rolesAllowed.includes("UNSECURED_OR_DEFAULT_SECURED") || endpoint.rolesAllowed.includes("NONE_EXPLICITLY_REQUIRED");
-
-                        if (!isPublicOrUnsecured && endpoint.rolesAllowed.length > 0) {
-                            secured++;
-                        } else {
-                            publicCount++;
-                        }
-                    });
-
-                    totalEndpointsElem.textContent = total;
-                    securedEndpointsElem.textContent = secured;
-                    publicEndpointsElem.textContent = publicCount;
-                } catch (error) {
-                    console.error('Error fetching API map:', error);
-                    totalEndpointsElem.textContent = 'ERROR';
-                    securedEndpointsElem.textContent = 'ERROR';
-                    publicEndpointsElem.textContent = 'ERROR';
+                if (!response.ok) {
                     apiMapErrorElem.classList.remove('hidden');
-                    if (!apiMapErrorElem.textContent) { // If error was not set by specific HTTP status
-                        apiMapErrorElem.textContent = `Error: ${error.message}. Ensure InfraMind is running and 'admin:password' is correct for API map access.`;
+                    const errorText = apiMapErrorElem.querySelector('.text-red-200\\/80');
+                    if (response.status === 401 || response.status === 403) {
+                        errorText.textContent = `Authentication required for API Map. Status: ${response.status}. Ensure admin credentials are valid.`;
+                    } else {
+                        errorText.textContent = `HTTP error! status: ${response.status}`;
                     }
+                    throw new Error(`Authentication/Authorization required. Status: ${response.status}`);
                 }
-            }
+                
+                const data = await response.json();
+                apiMapErrorElem.classList.add('hidden');
 
-            // Initial Data Load and Polling
-            document.addEventListener('DOMContentLoaded', () => {
-                // Fetch data immediately on page load
+                let total = data.length;
+                let secured = 0;
+                let publicCount = 0;
+
+                data.forEach(endpoint => {
+                    const isPublicOrUnsecured = endpoint.rolesAllowed.includes("UNSECURED_OR_DEFAULT_SECURED") || 
+                                             endpoint.rolesAllowed.includes("NONE_EXPLICITLY_REQUIRED");
+
+                    if (!isPublicOrUnsecured && endpoint.rolesAllowed.length > 0) {
+                        secured++;
+                    } else {
+                        publicCount++;
+                    }
+                });
+
+                totalEndpointsElem.textContent = total;
+                securedEndpointsElem.textContent = secured;
+                publicEndpointsElem.textContent = publicCount;
+            } catch (error) {
+                console.error('Error fetching API map:', error);
+                totalEndpointsElem.textContent = 'N/A';
+                securedEndpointsElem.textContent = 'N/A';
+                publicEndpointsElem.textContent = 'N/A';
+                
+                if (!apiMapErrorElem.classList.contains('hidden')) return;
+                
+                apiMapErrorElem.classList.remove('hidden');
+                const errorText = apiMapErrorElem.querySelector('.text-red-200\\/80');
+                errorText.textContent = `Error: ${error.message}. Ensure InfraMind is running and admin credentials are correct.`;
+            }
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initial data load
+            fetchHealthStatus();
+            fetchBuildInfo();
+            fetchApiMapSummary();
+            fetchUptimeMetric();
+
+            // Set up auto-refresh every 30 seconds
+            setInterval(() => {
                 fetchHealthStatus();
                 fetchBuildInfo();
                 fetchApiMapSummary();
-                fetchUptimeMetric(); // Fetch uptime metric
-
-                // Set up polling to refresh data every 30 seconds
-                setInterval(() => {
-                    fetchHealthStatus();
-                    fetchBuildInfo();
-                    fetchApiMapSummary();
-                    fetchUptimeMetric(); // Refresh uptime metric
-                }, 30000); // Refresh every 30 seconds
-            });
-        </script>
-    </div>
+                fetchUptimeMetric();
+            }, 30000);
+        });
+    </script>
 </body>
 
 </html>
