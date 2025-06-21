@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InfraMind: Live Backend Pulse</title>
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            color: #334155;
+            /* Default text color */
+        }
+
+        .card {
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .status-indicator {
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+
+        .status-up {
+            background-color: #10B981;
+            /* Green */
+        }
+
+        .status-down {
+            background-color: #EF4444;
+            /* Red */
+        }
+
+        .status-unknown {
+            background-color: #FBBF24;
+            /* Amber */
+        }
+    </style>
+</head>
+
+<body class="p-6">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold text-gray-900 mb-8 text-center">InfraMind: Live Backend Pulse</h1>
+
+        <!-- Overview Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="card">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">System Health</h2>
+                <div id="healthStatus" class="text-xl font-medium text-gray-700">
+                    Loading health status...
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Application Uptime</h2>
+                <p class="text-gray-700">
+                    <span class="font-semibold">Uptime:</span> <span id="uptimeValue">Loading...</span> seconds
+                </p>
+                <p class="text-gray-700 text-sm mt-2">
+                    <span class="font-semibold">Source:</span> OpenTelemetry Collector (Prometheus Exporter)
+                </p>
+            </div>
+        </div>
+
+        <!-- Build & Deployment Section -->
+        <div class="card">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Build & Deployment Info</h2>
+            <p class="text-gray-700">
+                <span class="font-semibold">Commit Hash:</span> <span id="commitHash">Loading...</span>
+            </p>
+            <p class="text-gray-700">
+                <span class="font-semibold">Build Date:</span> <span id="buildDate">Loading...</span>
+            </p>
+        </div>
+
+
+        <!-- Endpoint Summary Section -->
+        <div class="card">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">API Endpoint Summary</h2>
+            <p class="text-gray-700">
+                <span class="font-semibold">Total Endpoints:</span> <span id="totalEndpoints">Loading...</span>
+            </p>
+            <p class="text-gray-700">
+                <span class="font-semibold">Secured Endpoints:</span> <span id="securedEndpoints">Loading...</span>
+            </p>
+            <p class="text-gray-700">
+                <span class="font-semibold">Public Endpoints:</span> <span id="publicEndpoints">Loading...</span>
+            </p>
+            <div id="apiMapError" class="text-red-600 text-sm mt-2 hidden"></div>
+        </div>
+
+        <!-- Dynamic Data Fetching Script -->
+        <script>
+            // Base URL for the Spring Boot application
+            const BASE_APP_URL = 'http://localhost:8081';
+            // URL for the OpenTelemetry Collector's Prometheus endpoint (via CORS proxy)
+            const OTEL_PROMETHEUS_URL = 'http://localhost:8890/metrics';
+            // Basic Auth header for admin endpoints
+            const ADMIN_AUTH_HEADER = 'Basic ' + btoa('admin:password');
+
+            /**
+             * Fetches and displays the overall system health status.
+             * Targets the Spring Boot Actuator /actuator/health endpoint.
+             */
+            async function fetchHealthStatus() {
+                const healthStatusElem = document.getElementById('healthStatus');
+                try {
+                    // CRITICAL FIX: Target /actuator/health for structured health info
+                    const response = await fetch(`${BASE_APP_URL}/actuator/health`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json(); // Parse response as JSON
+
+                    const status = data.status; // Get overall status (e.g., UP, DOWN)
+
+                    let statusClass = 'status-unknown';
+                    let statusText = 'UNKNOWN';
+
+                    if (status === 'UP') {
+                        statusClass = 'status-up';
+                        statusText = 'OPERATIONAL';
+                    } else if (status === 'DOWN') {
+                        statusClass = 'status-down';
+                        statusText = 'CRITICAL FAILURE';
+                    } else {
+                        statusText = status.toUpperCase(); // Display other statuses as is
+                    }
+
+                    healthStatusElem.innerHTML = `<span class="status-indicator ${statusClass}"></span>${statusText}`;
+                    healthStatusElem.className = `text-xl font-medium text-gray-700`; // Reset class for dynamic text color
+                } catch (error) {
+                    console.error('Error fetching health status:', error);
+                    healthStatusElem.innerHTML = `<span class="status-indicator status-down"></span>ERROR: Could not fetch health`;
+                    healthStatusElem.className = `text-xl font-medium text-red-600`;
+                }
+            }
+
+            /**
+             * Fetches and displays application build information (commit hash, build date).
+             * Targets the Spring Boot Actuator /actuator/info endpoint.
+             */
+            async function fetchBuildInfo() {
+                const commitHashElem = document.getElementById('commitHash');
+                const buildDateElem = document.getElementById('buildDate');
+                try {
+                    const response = await fetch(`${BASE_APP_URL}/actuator/info`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+
+                    const gitCommit = data.git && data.git.commit && data.git.commit.id ? data.git.commit.id.substring(0, 7) : 'N/A';
+                    const buildTime = data.build && data.build.time ? new Date(data.build.time).toLocaleString() : 'N/A';
+
+                    commitHashElem.textContent = gitCommit;
+                    buildDateElem.textContent = buildTime;
+                } catch (error) {
+                    console.error('Error fetching build info:', error);
+                    commitHashElem.textContent = 'ERROR';
+                    buildDateElem.textContent = 'ERROR';
+                }
+            }
+
+            /**
+             * Fetches and displays the custom application uptime metric from the OpenTelemetry Collector.
+             * Targets http://localhost:8889/metrics and parses the Prometheus format.
+             */
+            async function fetchUptimeMetric() {
+                const uptimeValueElem = document.getElementById('uptimeValue');
+                try {
+                    const response = await fetch(OTEL_PROMETHEUS_URL);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const text = await response.text(); // Get raw text, not JSON
+
+                    // Regex to find the 'inframind_custom_uptime_seconds' metric and its value
+                    // This regex is specific to Prometheus text format output.
+                    const uptimeRegex = /^inframind_custom_uptime_seconds\{.*\}\s+(\d+(\.\d+)?)$/m;
+                    const match = text.match(uptimeRegex);
+
+                    if (match && match[1]) {
+                        uptimeValueElem.textContent = parseFloat(match[1]).toFixed(0); // Display as integer seconds
+                    } else {
+                        uptimeValueElem.textContent = 'N/A (Metric not found)';
+                        console.warn("Uptime metric 'inframind_custom_uptime_seconds' not found in Prometheus output.");
+                    }
+                } catch (error) {
+                    console.error('Error fetching uptime metric:', error);
+                    uptimeValueElem.textContent = 'ERROR';
+                }
+            }
+
+            /**
+             * Fetches API map and calculates total, secured, and public endpoint counts.
+             * Targets the custom /infra/api-map endpoint.
+             */
+            async function fetchApiMapSummary() {
+                const totalEndpointsElem = document.getElementById('totalEndpoints');
+                const securedEndpointsElem = document.getElementById('securedEndpoints');
+                const publicEndpointsElem = document.getElementById('publicEndpoints');
+                const apiMapErrorElem = document.getElementById('apiMapError');
+
+                try {
+                    const response = await fetch(`${BASE_APP_URL}/infra/api-map`, {
+                        headers: {
+                            'Authorization': ADMIN_AUTH_HEADER
+                        }
+                    });
+
+                    if (!response.ok) {
+                        apiMapErrorElem.classList.remove('hidden');
+                        if (response.status === 401 || response.status === 403) {
+                            apiMapErrorElem.textContent = `Authentication/Authorization required for API Map. Status: ${response.status}. Ensure 'admin:password' is valid.`;
+                            throw new Error(`Authentication/Authorization required. Status: ${response.status}`);
+                        }
+                        apiMapErrorElem.textContent = `HTTP error! status: ${response.status}`;
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    apiMapErrorElem.classList.add('hidden'); // Hide error if successful
+
+                    let total = data.length;
+                    let secured = 0;
+                    let publicCount = 0;
+
+                    data.forEach(endpoint => {
+                        const isPublicOrUnsecured = endpoint.rolesAllowed.includes("UNSECURED_OR_DEFAULT_SECURED") || endpoint.rolesAllowed.includes("NONE_EXPLICITLY_REQUIRED");
+
+                        if (!isPublicOrUnsecured && endpoint.rolesAllowed.length > 0) {
+                            secured++;
+                        } else {
+                            publicCount++;
+                        }
+                    });
+
+                    totalEndpointsElem.textContent = total;
+                    securedEndpointsElem.textContent = secured;
+                    publicEndpointsElem.textContent = publicCount;
+                } catch (error) {
+                    console.error('Error fetching API map:', error);
+                    totalEndpointsElem.textContent = 'ERROR';
+                    securedEndpointsElem.textContent = 'ERROR';
+                    publicEndpointsElem.textContent = 'ERROR';
+                    apiMapErrorElem.classList.remove('hidden');
+                    if (!apiMapErrorElem.textContent) { // If error was not set by specific HTTP status
+                        apiMapErrorElem.textContent = `Error: ${error.message}. Ensure InfraMind is running and 'admin:password' is correct for API map access.`;
+                    }
+                }
+            }
+
+            // Initial Data Load and Polling
+            document.addEventListener('DOMContentLoaded', () => {
+                // Fetch data immediately on page load
+                fetchHealthStatus();
+                fetchBuildInfo();
+                fetchApiMapSummary();
+                fetchUptimeMetric(); // Fetch uptime metric
+
+                // Set up polling to refresh data every 30 seconds
+                setInterval(() => {
+                    fetchHealthStatus();
+                    fetchBuildInfo();
+                    fetchApiMapSummary();
+                    fetchUptimeMetric(); // Refresh uptime metric
+                }, 30000); // Refresh every 30 seconds
+            });
+        </script>
+    </div>
+</body>
+
+</html>

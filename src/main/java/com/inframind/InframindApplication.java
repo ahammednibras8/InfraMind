@@ -3,6 +3,7 @@ package com.inframind;
 import java.lang.reflect.Method;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -15,12 +16,15 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
@@ -56,9 +60,9 @@ public class InframindApplication {
             // Calculate uptime as current epoch second minus startup epoch second
             return (double) (Instant.now().getEpochSecond() - appStartupTime.getEpochSecond());
         })
-        .description("Application uptime in seconds") // Human-readable description
-        .tag("component", "core") // Add a tag for better categorization and filtering
-        .register(meterRegistry); // Register with the MeterRegistry
+                .description("Application uptime in seconds") // Human-readable description
+                .tag("component", "core") // Add a tag for better categorization and filtering
+                .register(meterRegistry); // Register with the MeterRegistry
 
         // Log confirmation that the metric has been registered via @Bean
         System.out.println("Custom uptime metrics 'inframind_custom_uptime_seconds' registered via @Bean");
@@ -96,53 +100,90 @@ public class InframindApplication {
     public List<EndpointMetadata> getApiMap() {
         List<EndpointMetadata> apiMap = new ArrayList<>();
 
-        // Get all registered request mappings
-        for (Map.Entry<RequestMappingInfo, org.springframework.web.method.HandlerMethod> entry : handlerMapping
-                .getHandlerMethods().entrySet()) {
-            RequestMappingInfo mappingInfo = entry.getKey();
-            org.springframework.web.method.HandlerMethod handlerMethod = entry.getValue();
-
-            // Extract HTTP method(s)
-            Set<String> methods = mappingInfo.getMethodsCondition().getMethods().stream().map(Enum::name)
-                    .collect(Collectors.toSet());
-
-            // Extract URL patterns
-            Set<String> patterns = mappingInfo.getPatternValues();
-
-            // Extract controller method name
-            String controllerMethod = handlerMethod.getMethod().getName();
-            String controllerClass = handlerMethod.getBeanType().getName();
-
-            // Determine Roles Allowed
-            List<String> rolesAllowed = new ArrayList<>();
-            Method method = handlerMethod.getMethod();
-            PreAuthorize preAuthorizeAnnotation = AnnotationUtils.findAnnotation(method, PreAuthorize.class);
-            PreAuthorize classPreAuthorizeAnnotation = AnnotationUtils.findAnnotation(handlerMethod.getBeanType(),
-                    PreAuthorize.class);
-
-            if (preAuthorizeAnnotation != null) {
-                rolesAllowed.addAll(extractRolesFromExpression(preAuthorizeAnnotation.value()));
-            } else if (classPreAuthorizeAnnotation != null) {
-                rolesAllowed.addAll(extractRolesFromExpression(classPreAuthorizeAnnotation.value()));
-            } else {
-                // If no @PreAuthorize, consider it public or unsecured by default for API map
-                // purposes
-                rolesAllowed.add("UNSECURED_OR_DEFAULT_SECURED");
-            }
-            if (rolesAllowed.isEmpty()) {
-                rolesAllowed.add("UNSECURED_OR_DEFAULT_SECURED");
+        try {
+            // Check if handlerMapping is available
+            if (handlerMapping == null) {
+                System.err.println("ERROR: RequestMappingHandlerMapping is null");
+                return apiMap;
             }
 
-            EndpointMetadata metadata = new EndpointMetadata(
-                    patterns.isEmpty() ? List.of("") : new ArrayList<>(patterns),
-                    methods.isEmpty() ? List.of("ANY") : new ArrayList<>(methods),
-                    controllerClass + "::" + controllerMethod,
-                    rolesAllowed);
-            apiMap.add(metadata);
+            // Get all registered request mappings
+            Map<RequestMappingInfo, org.springframework.web.method.HandlerMethod> handlerMethods = handlerMapping.getHandlerMethods();
+            if (handlerMethods == null || handlerMethods.isEmpty()) {
+                System.out.println("WARNING: No handler methods found");
+                return apiMap;
+            }
 
+            System.out.println("Found " + handlerMethods.size() + " handler methods");
+
+            for (Map.Entry<RequestMappingInfo, org.springframework.web.method.HandlerMethod> entry : handlerMethods.entrySet()) {
+                try {
+                    RequestMappingInfo mappingInfo = entry.getKey();
+                    org.springframework.web.method.HandlerMethod handlerMethod = entry.getValue();
+
+                    if (mappingInfo == null || handlerMethod == null) {
+                        System.err.println("WARNING: Null mappingInfo or handlerMethod, skipping");
+                        continue;
+                    }
+
+                    // Extract HTTP method(s)
+                    Set<String> methods = new HashSet<>();
+                    if (mappingInfo.getMethodsCondition() != null && mappingInfo.getMethodsCondition().getMethods() != null) {
+                        methods = mappingInfo.getMethodsCondition().getMethods().stream().map(Enum::name)
+                                .collect(Collectors.toSet());
+                    }
+
+                    // Extract URL patterns
+                    Set<String> patterns = new HashSet<>();
+                    if (mappingInfo.getPatternValues() != null) {
+                        patterns = mappingInfo.getPatternValues();
+                    }
+
+                    // Extract controller method name
+                    String controllerMethod = handlerMethod.getMethod().getName();
+                    String controllerClass = handlerMethod.getBeanType().getName();
+
+                    // Determine Roles Allowed
+                    List<String> rolesAllowed = new ArrayList<>();
+                    Method method = handlerMethod.getMethod();
+                    PreAuthorize preAuthorizeAnnotation = AnnotationUtils.findAnnotation(method, PreAuthorize.class);
+                    PreAuthorize classPreAuthorizeAnnotation = AnnotationUtils.findAnnotation(handlerMethod.getBeanType(),
+                            PreAuthorize.class);
+
+                    if (preAuthorizeAnnotation != null) {
+                        rolesAllowed.addAll(extractRolesFromExpression(preAuthorizeAnnotation.value()));
+                    } else if (classPreAuthorizeAnnotation != null) {
+                        rolesAllowed.addAll(extractRolesFromExpression(classPreAuthorizeAnnotation.value()));
+                    } else {
+                        // If no @PreAuthorize, consider it public or unsecured by default for API map
+                        // purposes
+                        rolesAllowed.add("UNSECURED_OR_DEFAULT_SECURED");
+                    }
+                    if (rolesAllowed.isEmpty()) {
+                        rolesAllowed.add("UNSECURED_OR_DEFAULT_SECURED");
+                    }
+
+                    EndpointMetadata metadata = new EndpointMetadata(
+                            patterns.isEmpty() ? List.of("") : new ArrayList<>(patterns),
+                            methods.isEmpty() ? List.of("ANY") : new ArrayList<>(methods),
+                            controllerClass + "::" + controllerMethod,
+                            rolesAllowed);
+                    apiMap.add(metadata);
+
+                } catch (Exception e) {
+                    System.err.println("ERROR processing handler method: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+
+            System.out.println("Successfully processed " + apiMap.size() + " endpoints");
+            return apiMap;
+
+        } catch (Exception e) {
+            System.err.println("ERROR in getApiMap: " + e.getMessage());
+            e.printStackTrace();
+            return apiMap;
         }
-
-        return apiMap;
     }
 
     // Objective: Show who has access to what, where, and why.

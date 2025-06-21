@@ -42,9 +42,6 @@ jobs:
       - name: Simulate Local Deployment and Verification
         run: |
           echo "--- Starting Docker Compose services for verification ---"
-          # CRITICAL CORRECTION: Start ALL services in docker-compose.yml
-          # This will use the docker-compose.yml from your repo, which now includes
-          # the otel-collector, app command, javaagent volume, and environment variables.
           docker-compose up -d
 
           echo "Giving services an initial 15 seconds to boot before health checks begin..."
@@ -64,33 +61,41 @@ jobs:
             sleep 1
           done
 
-          # Final check and cleanup for application startup
           if [ "$APP_READY" = false ]; then
             echo "ERROR: Application did not start successfully within the expected time."
-            echo "--- DIAGNOSTIC: Docker Compose Process Status ---"
-            docker-compose ps # Show status of all services
-            echo "--- END DIAGNOSTIC ---"
-            echo "--- DIAGNOSTIC: Docker Compose Logs for inframind-app ---"
-            docker-compose logs inframind-app # Output container logs for debugging
-            echo "--- END DIAGNOSTIC ---"
-            echo "--- DIAGNOSTIC: Docker Compose Logs for otel-collector (Startup) ---"
+            docker-compose ps
+            docker-compose logs inframind-app
             docker-compose logs otel-collector
-            echo "--- END DIAGNOSTIC ---"
-            exit 1 # Fail the step if application is not ready
+            exit 1
+          fi
+
+          echo "--- Verifying /infra/api-map endpoint (should be 200) ---"
+          API_MAP_STATUS=$(curl -u admin:password -s -o /dev/null -w "%{http_code}" http://localhost:8081/infra/api-map)
+          if [ "$API_MAP_STATUS" -ne 200 ]; then
+            echo "ERROR: /infra/api-map endpoint did not return 200 (got $API_MAP_STATUS)"
+            docker-compose logs inframind-app
+            exit 1
+          fi
+
+          echo "--- Verifying /actuator/info endpoint (should be 200) ---"
+          INFO_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/actuator/info)
+          if [ "$INFO_STATUS" -ne 200 ]; then
+            echo "ERROR: /actuator/info endpoint did not return 200 (got $INFO_STATUS)"
+            docker-compose logs inframind-app
+            exit 1
           fi
 
           echo "Application verification successful."
 
           # NEW: Generate some traffic to ensure metrics are pushed
           echo "--- Generating traffic to application endpoints ---"
-          # Ensure you use the correct credentials for authenticated endpoints
           curl -u admin:password http://localhost:8081/api/v1/status || true
           curl -u admin:password -X POST http://localhost:8081/api/user/data || true
           curl http://localhost:8081/api/public/health || true
           sleep 5 # Give time for metrics to be exported and processed
 
           echo "--- DIAGNOSTIC: OpenTelemetry Collector Logs (After Traffic) ---"
-          docker-compose logs otel-collector # Output collector logs AFTER traffic generation
+          docker-compose logs otel-collector
           echo "--- END DIAGNOSTIC ---"
 
           echo "--- Verifying OpenTelemetry Collector Metrics Endpoint ---"
@@ -136,5 +141,4 @@ jobs:
           fi
 
           echo "--- Verification complete. Cleaning up Docker Compose services ---"
-          # Make docker-compose down robust by ensuring it doesn't fail the step if containers are already gone.
           docker-compose down || true

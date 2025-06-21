@@ -26,3 +26,13 @@ services:
       - "4318:4318"
       - "8889:8889"
     restart: on-failure
+
+  cors-proxy:
+    image: nginx:alpine
+    ports:
+      - "8890:80"
+    volumes:
+      - ./nginx-cors.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - otel-collector
+    restart: on-failure
